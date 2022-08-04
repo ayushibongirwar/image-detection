@@ -1,0 +1,340 @@
+#introduction to convoloution neural networks and computer vision with tensorslow
+
+#get the data
+
+import zipfile
+!wget https://storage.googleapis.com/ztm_tf_course/food_vision/pizza_steak.zip 
+
+# Unzip the downloaded file
+zip_ref = zipfile.ZipFile("pizza_steak.zip", "r")
+zip_ref.extractall()
+zip_ref.close()
+
+#inspect the data
+!ls pizza_steak #ls is list the file in pizza steak
+
+!ls pizza_steak/train
+
+!ls pizza_steak/train/steak
+
+import os
+
+for dirpath, dirnames, filenames in os.walk("pizza_steak"):
+  print(f"there are {len(dirnames)} directories and {len(filenames)} images in '{dirpath}'.")
+
+#another way to find out how many images in file
+num_steak_images_train = len(os.listdir("pizza_steak/train/steak"))
+
+num_steak_images_train
+
+import pathlib
+import numpy as np
+data_dir=pathlib.Path("pizza_steak/train")
+class_names = np.array(sorted([item.name for item in data_dir.glob('*')])) # creat
+print(class_names)
+
+import matplotlib.pyplot as plt
+import matplotlib.image as mpimg
+import random
+
+def view_random_image(target_dir, target_class):
+  #setup a target directory
+  target_folder = target_dir+target_class
+
+  random_image=random.sample(os.listdir(target_folder),1)
+  print(random_image)
+
+  img = mpimg.imread(target_folder + "/" + random_image[0])
+  plt.imshow(img)
+  plt.title(target_class)
+  plt.axis("off");
+
+  print(f"image shape: {img.shape}")
+  return img
+
+#view random img
+img=view_random_image(target_dir="pizza_steak/train/",
+                      target_class="pizza")
+
+import tensorflow as tf
+tf.constant(img)
+
+img.shape #width height and color channels
+
+#get all pixels value between 0 and 1
+img/255.
+
+building convulation neural network
+##an end to end examples
+a convolutional neural network to find patterns in our images , more specifically we need way to:
+
+load our images
+
+preprocess our images
+
+build a CNN to find patterns in our images
+
+compile our CNN
+
+fit the CNN to our training data
+
+import tensorflow as tf
+from tensorflow.keras.preprocessing.image import ImageDataGenerator
+
+tf.random.set_seed(42)
+
+#preprocessed data(get all pixel valeus between 0 and 1 also called scaling/normalization )
+train_datagen=ImageDataGenerator(rescale=1./255)
+valid_datagen = ImageDataGenerator(rescale=1./255)
+
+#set up paths to directory
+train_dir = "/content/pizza_steak/train"
+test_dir = "/content/pizza_steak/test"
+
+#import data from directories and turn it into batches
+train_data = train_datagen.flow_from_directory(directory=train_dir,
+                                               batch_size=32,
+                                               target_size=(224,224),
+                                               class_mode="binary",
+                                               seed=42)
+
+valid_data = valid_datagen.flow_from_directory(directory=test_dir,
+                                               batch_size=32,
+                                               target_size=(224,224),
+                                               class_mode="binary",
+                                               seed=42)
+
+#build a cnn model 
+model_1 = tf.keras.models.Sequential([
+                                     tf.keras.layers.Conv2D(filters=10,
+                                                            kernel_size=3,
+                                                            activation="relu",
+                                                            input_shape=(224,224,3)),
+                                     tf.keras.layers.Conv2D(10,3,activation="relu"),
+                                     tf.keras.layers.MaxPool2D(pool_size=2,
+                                                               padding = "valid"),
+                                     tf.keras.layers.Conv2D(10,3,activation="relu"),
+                                     tf.keras.layers.Conv2D(10,3,activation="relu"),
+                                     tf.keras.layers.MaxPool2D(2),
+                                     tf.keras.layers.Flatten(),
+                                     tf.keras.layers.Dense(1,activation="sigmoid")
+
+])
+
+model_1.compile(loss="binary_crossentropy",
+                optimizer=tf.keras.optimizers.Adam(),
+                metrics=["accuracy"])
+
+histpry_1 = model_1.fit(train_data,
+                       epochs=5,
+                      steps_per_epoch=len(train_data),
+                      validation_data=valid_data,
+                      validation_steps=len(valid_data))
+
+len(train_data)
+
+
+tf.random.set_seed(42)
+
+#create a model to repricate te tensor flow model
+model_2 = tf.keras.Sequential([
+                                      tf.keras.layers.Flatten(input_shape=(224,224,3)),
+                                      tf.keras.layers.Dense(4,activation="relu"),
+                                      tf.keras.layers.Dense(4,activation="relu"),
+                                      tf.keras.layers.Dense(1,activation="sigmoid")
+])
+model_2.compile(loss="binary_crossentropy",
+                optimizer=tf.keras.optimizers.Adam(),
+                metrics=["accuracy"])
+history_2=model_2.fit(train_data,epochs=5,steps_per_epoch=len(train_data),
+                      validation_data=valid_data,
+                      validation_steps=len(valid_data))
+
+model_2.summary()
+
+tf.random.set_seed(42)
+
+model3=tf.keras.Sequential([
+                                   tf.keras.layers.Flatten(input_shape=(224,224,3)),
+                                   tf.keras.layers.Dense(100, activation="relu"),
+                                   tf.keras.layers.Dense(100,activation="relu"),
+                                   tf.keras.layers.Dense(100,activation="relu"),
+                                   tf.keras.layers.Dense(1,activation="sigmoid")
+])
+
+model3.compile(loss="binary_crossentropy",
+               optimizer=tf.keras.optimizers.Adam(),
+               metrics=["accuracy"])
+
+history_3= model3.fit(train_data,
+                      epochs=5,
+                      steps_per_epoch=len(train_data),
+                      validation_data=valid_data,
+                      validation_steps=len(valid_data))
+
+model3.summary()
+
+###binary classification
+
+plt.figure()
+plt.subplot(1,2,1)
+steak_img = view_random_image("pizza_steak/train/", "steak")
+plt.subplot(1,2,2)
+pizza_img=view_random_image("pizza_steak/train/","pizza")
+
+#define directory dataset paths
+train_dir = "pizza_steak/train/"
+test_dir="pizza_steak/test/"
+
+#batch is the small subset of data rather than to look at all 10000 imgs 
+
+
+!nvidia-smi
+
+#train and test data generators and rescale the data
+from tensorflow.keras.preprocessing.image import ImageDataGenerator
+train_datagen = ImageDataGenerator(rescale=1/255.)
+test_datagen=ImageDataGenerator(rescale=1/255.)
+
+#load in images from directories to turn them into batches
+train_data = train_datagen.flow_from_directory(directory = train_dir, #target directory of image
+                                               target_size=(224,224), #target size of images (height,width)
+                                               class_mode="binary", #type of data working with
+                                               batch_size=32) 
+#size of minibatces to load data into
+                                               
+test_data=test_datagen.flow_from_directory(directory=test_dir,
+                                           target_size=(224,224),
+                                           class_mode="binary",
+                                           batch_size=32)
+
+#get sample of train data batch
+images,labels = train_data.next()
+len(images), len(labels)
+
+#how many batchess
+len(train_data), 1500/32
+
+#get first two images
+images[:2], images[0].shape
+
+#make he creating of our model a lil easy
+from tensorflow.keras.optimizers import Adam
+from tensorflow.keras.layers import Dense, Flatten, Conv2D, MaxPool2D, Activation
+from tensorflow.keras import Sequential
+
+
+
+#creating the model our baseline with three layer convolution network
+model_4 = Sequential([
+  Conv2D(filters=10, 
+         kernel_size=3, 
+         strides=1,
+         padding='valid',
+         activation='relu', 
+         input_shape=(224, 224, 3)), # input layer (specify input shape)
+  Conv2D(10, 3, activation='relu'),
+  Conv2D(10, 3, activation='relu'),
+  Flatten(),
+  Dense(1, activation='sigmoid') # output layer (specify output shape)
+])
+
+                           
+model_4.compile(loss="binary_crossentropy",
+               optimizer=Adam(),
+               metrics=["accuracy"])
+
+                           
+
+model_4.summary()
+
+len(train_data), len(test_data)
+
+history_4=model_4.fit(train_data, #combination if labels and sample data
+                      epochs=5,
+                      steps_per_epoch=len(train_data),
+                      validation_data=test_data,
+                      validation_steps=len(test_data))
+
+
+model_1.evaluate(test_data)
+
+model_1.summary()
+
+5. evaluation our model
+
+
+import pandas as pd
+pd.DataFrame(history_4.history).plot(figsize=(10,7));
+
+def plot_loss_curves(history):
+  """
+  Returns separate loss curves for training and validation metrics.
+  """ 
+  loss = history.history['loss']
+  val_loss = history.history['val_loss']
+
+  accuracy = history.history['accuracy']
+  val_accuracy = history.history['val_accuracy']
+
+  epochs = range(len(history.history['loss']))
+
+  # Plot loss
+  plt.plot(epochs, loss, label='training_loss')
+  plt.plot(epochs, val_loss, label='val_loss')
+  plt.title('Loss')
+  plt.xlabel('Epochs')
+  plt.legend()
+
+  # Plot accuracy
+  plt.figure()
+  plt.plot(epochs, accuracy, label='training_accuracy')
+  plt.plot(epochs, val_accuracy, label='val_accuracy')
+  plt.title('Accuracy')
+  plt.xlabel('Epochs')
+  plt.legend();
+
+**note when a models validation loss starts tpo increaseits likely that the model is overfitting. this means its leaning the pattern sin the training data set too well
+
+plot_loss_curves(history_4)
+
+adjusting the model parameters
+fitting a machine learning model comes in 3 steps:
+0. create a baseline
+1. beat the baseline by overfitting a larger model
+2. reduce overfitting
+
+ways to reduce overfitting
+ 1.increase the number of conv layers
+ 2.increase nom of conv filters
+ 3.add a nother dense layer to te output of our flattened layer
+
+ reduce ofadd data augmentation
+ add regualaziatuon layer 
+ add more data
+
+model_5 = Sequential([
+  Conv2D(10, 3, activation='relu', input_shape=(224, 224, 3)),
+  MaxPool2D(pool_size=2), # reduce number of features by half
+  Conv2D(10, 3, activation='relu'),
+  MaxPool2D(),
+  Conv2D(10, 3, activation='relu'),
+  MaxPool2D(),
+  Flatten(),
+  Dense(1, activation='sigmoid')
+])
+
+model_5.compile(loss="binary_crossentropy",
+                optimizer=Adam(),
+                metrics=["accuracy"])
+history_5 = model_5.fit(train_data,
+            epochs=5,
+            steps_per_epoch=len(train_data),
+            validation_data=test_data,
+            validation_steps=len(valid_data))
+
+model_5.summary()
+
+model_4.summary()
+
+plot_loss_curves(history_5)
